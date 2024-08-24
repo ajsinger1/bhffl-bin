@@ -353,7 +353,7 @@ def main():
         "-f",
         "--file",
         help="Path to the input CSV file containing team names",
-        default="divisions.csv",
+        default="example_divisions.csv",
     )
     parser.add_argument(
         "-i", "--info", action="store_true", help="Display information about the script"
