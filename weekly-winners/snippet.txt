@@ -1,0 +1,14 @@
+>>> for i in range(1,15):
+...     maxScore = -1
+...     winner = ''
+...     box_scores = bhffl.box_scores(i)
+...     for b in box_scores:
+...             if b.home_score > maxScore:
+...                     maxScore = b.home_score
+...                     winner = '/'.join([o['lastName'] for o in b.home_team.owners])
+...             if b.away_score > maxScore:
+...                     maxScore = b.away_score
+...                     winner = '/'.join([o['lastName'] for o in b.away_team.owners])
+...     assert(maxScore > 0)
+...     assert(winner != '')
+...     d[winner] += 1
