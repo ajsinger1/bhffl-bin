@@ -2,7 +2,7 @@
 
 ## Overview
 
-The BHFFL Fantasy Football Schedule Generator creates a 13-week schedule for a fantasy football league, ensuring all teams play according to set rules. The script uses a backtracking algorithm with MRV and forward-checking heuristics and can output the schedule in CSV or XLSX format.
+The BHFFL Fantasy Football Schedule Generator creates a 14-week schedule for a fantasy football league, ensuring all teams play according to set rules. The script uses a backtracking algorithm with MRV and forward-checking heuristics and can output the schedule in CSV or XLSX format.
 
 ## Usage
 
@@ -27,10 +27,17 @@ Generate a schedule using the example CSV file:
 python generate_schedule.py -f example_divisions.csv -o schedule.xlsx
 ```
 
+## Input Format
+
+The CSV file needs one column per division (`DIVISION 1`, `DIVISION 2`, `DIVISION 3`), each
+holding four team names — 12 teams in total. See `example_divisions.csv`.
+
 ## Schedule Details
 
-- **In-Division Games**: Teams play each other twice.
-- **Out-of-Division Games**: Teams play all other teams once.
+- **Divisions**: Three divisions of four teams.
+- **In-Division Games**: Teams play each division rival twice (6 games).
+- **Out-of-Division Games**: Teams play all other teams once (8 games).
+- **Season Length**: 14 weeks, six games per week.
 - **Randomized**: The schedule is shuffled each time.
 
 ## License

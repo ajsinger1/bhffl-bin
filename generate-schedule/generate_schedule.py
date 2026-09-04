@@ -19,7 +19,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
-NUM_WEEKS = 13
+NUM_DIVISIONS = 3
+DIVISION_SIZE = 4
+
+# Every team plays its division twice and everyone else once
+NUM_WEEKS = 2 * (DIVISION_SIZE - 1) + DIVISION_SIZE * (NUM_DIVISIONS - 1)
+
 teams = None
 
 
@@ -59,14 +64,13 @@ class Multiset:
 class GameGraph:
     def __init__(self, all_games, teams):
         self.teams = set(teams)
+        self.total_games = len(all_games)
+        self.games_per_week = len(self.teams) // 2
         self.graph = defaultdict(set)
         self.weeks = [set() for _ in range(NUM_WEEKS)]
 
         for game in all_games:
             self._add_game(game)
-        assert all(
-            [len(edges) == (len(teams) - 2) * 2 + 1 for edges in self.graph.values()]
-        )
 
     def schedule_week(self, game_to_schedule, week_idx):
         assert week_idx >= 0 and week_idx < NUM_WEEKS
@@ -101,7 +105,7 @@ class GameGraph:
 
     def validate_graph(self):
         for matchups in self.weeks:
-            assert len(matchups) == 6
+            assert len(matchups) == self.games_per_week
             for game1, game2 in combinations(matchups, 2):
                 assert game2 not in self.graph[game1]
                 assert game1 not in self.graph[game2]
@@ -114,17 +118,23 @@ class GameGraph:
                 print(f"  {game[0]} vs {game[1]}")
             print("-" * 15)
 
-    def save(self, file):
+    def save(self, file: str):
+        if file.find(".") == -1:
+            self._save_csv(file + ".csv")
+            self._save_xlsx(file + ".xlsx")
+            return
         if file.endswith(".csv"):
             self._save_csv(file)
             return
-        if not file.endswith(".xlsx"):
-            file += ".xlsx"
-        self._save_xlsx(file)
+        if file.endswith(".xlsx"):
+            self._save_xlsx(file)
+            return
+        print("Error: Unsupported file format. Please use .csv or .xlsx")
+        
 
     def _can_schedule_week(self, game_to_schedule, week_idx):
         # Week is full
-        if len(self.weeks[week_idx]) >= len(self.teams) // 2:
+        if len(self.weeks[week_idx]) >= self.games_per_week:
             return False
 
         # Conflicting game
@@ -269,7 +279,9 @@ def generate_schedule_util(game_graph, remaining_games, bar):
     )
     for week in weeks_sorted:
         if game_graph.schedule_week(game_to_schedule, week):
-            assert game_graph.get_num_scheduled() == 78 - len(remaining_games)
+            assert game_graph.get_num_scheduled() == game_graph.total_games - len(
+                remaining_games
+            )
             if generate_schedule_util(game_graph, remaining_games, bar):
                 return True
             else:
@@ -281,9 +293,9 @@ def generate_schedule_util(game_graph, remaining_games, bar):
 
 
 def read_teams(file_path):
-    teams = {f"DIVISION {i+1}": [] for i in range(4)}
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
+        teams = {division: [] for division in reader.fieldnames}
         for row in reader:
             for division, team in row.items():
                 if team:
@@ -305,6 +317,15 @@ def generate_schedule(teams):
         out_of_division_games.extend(product(div1, div2))
 
     all_games = Multiset(in_division_games + out_of_division_games)
+
+    games_needed = NUM_WEEKS * (len(all_teams) // 2)
+    if len(all_teams) % 2 != 0 or len(all_games) != games_needed:
+        raise ValueError(
+            f"{len(all_teams)} teams in {len(teams)} divisions produce "
+            f"{len(all_games)} games, but a {NUM_WEEKS}-week season needs "
+            f"exactly {games_needed}. Use {NUM_DIVISIONS} divisions of "
+            f"{DIVISION_SIZE} teams."
+        )
 
     game_graph = GameGraph(all_games, all_teams)
 
@@ -377,14 +398,18 @@ def main():
         print("Fantasy Football Schedule Generator")
         print("===================================")
         print(
-            "This script generates a 13-week fantasy football schedule based on the teams provided in a CSV file."
+            f"This script generates a {NUM_WEEKS}-week fantasy football schedule based on the teams provided in a CSV file."
         )
         print(
-            "The CSV file should have four columns: DIVISION 1, DIVISION 2, DIVISION 3, DIVISION 4."
+            f"The CSV file should have {NUM_DIVISIONS} columns: "
+            + ", ".join(f"DIVISION {i + 1}" for i in range(NUM_DIVISIONS))
+            + "."
         )
-        print("Each column should contain three team names.")
+        print(f"Each column should contain {DIVISION_SIZE} team names.")
         print("\nThe generated schedule ensures that:")
-        print("- Every team plays the other two teams in their division twice")
+        print(
+            f"- Every team plays the other {DIVISION_SIZE - 1} teams in their division twice"
+        )
         print("- Every team plays all teams from other divisions once")
         print("- The schedule is randomized each time the script is run")
         return
