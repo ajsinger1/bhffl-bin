@@ -25,6 +25,10 @@ DIVISION_SIZE = 4
 # Every team plays its division twice and everyone else once
 NUM_WEEKS = 2 * (DIVISION_SIZE - 1) + DIVISION_SIZE * (NUM_DIVISIONS - 1)
 
+# Minimum number of weeks between the two meetings of a division rivalry.
+# A gap of 1 would mean back-to-back weeks against the same opponent.
+MIN_REMATCH_GAP = 4
+
 teams = None
 
 
@@ -89,16 +93,10 @@ class GameGraph:
         return len(self.weeks[week_idx])
 
     def get_num_schedulable_weeks(self, game_to_schedule):
-        num_schedulable_weeks = 0
-        for week in self.weeks:
-            if not any(
-                [
-                    game_to_schedule[0] in game or game_to_schedule[1] in game
-                    for game in week
-                ]
-            ):
-                num_schedulable_weeks += 1
-        return num_schedulable_weeks
+        return sum(
+            self._can_schedule_week(game_to_schedule, week_idx)
+            for week_idx in range(NUM_WEEKS)
+        )
 
     def get_num_scheduled(self):
         return sum([len(week) for week in self.weeks])
@@ -140,6 +138,12 @@ class GameGraph:
         # Conflicting game
         if any([game in self.graph[game_to_schedule] for game in self.weeks[week_idx]]):
             return False
+
+        # Rematch scheduled too soon before/after the first meeting
+        for offset in range(1, MIN_REMATCH_GAP):
+            for idx in (week_idx - offset, week_idx + offset):
+                if 0 <= idx < NUM_WEEKS and game_to_schedule in self.weeks[idx]:
+                    return False
 
         return True
 
@@ -411,6 +415,10 @@ def main():
             f"- Every team plays the other {DIVISION_SIZE - 1} teams in their division twice"
         )
         print("- Every team plays all teams from other divisions once")
+        print(
+            f"- Division rematches are at least {MIN_REMATCH_GAP} weeks apart, so no team"
+        )
+        print("  faces the same opponent in back-to-back weeks")
         print("- The schedule is randomized each time the script is run")
         return
 

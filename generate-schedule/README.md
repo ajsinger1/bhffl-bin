@@ -38,6 +38,10 @@ holding four team names — 12 teams in total. See `example_divisions.csv`.
 - **In-Division Games**: Teams play each division rival twice (6 games).
 - **Out-of-Division Games**: Teams play all other teams once (8 games).
 - **Season Length**: 14 weeks, six games per week.
+- **Rematch Spacing**: The two meetings of a division rivalry are at least
+  `MIN_REMATCH_GAP` weeks apart (default 4), so nobody plays the same opponent
+  in back-to-back weeks. Raising it much past 4 makes the search unreliable,
+  and 8 or higher has no solution.
 - **Randomized**: The schedule is shuffled each time.
 
 ## License
